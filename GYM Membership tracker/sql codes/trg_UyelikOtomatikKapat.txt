@@ -1,0 +1,33 @@
+USE [OGUGYMDB]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER   TRIGGER [dbo].[trg_UyelikOtomatikKapat]
+ON [dbo].[uyelikler]
+AFTER UPDATE
+AS
+BEGIN
+    UPDATE uyelikler
+    SET durum = 0
+    FROM uyelikler u
+    INNER JOIN inserted i ON u.uyelik_id = i.uyelik_id
+    WHERE i.bitis_tarihi < CAST(GETDATE() AS DATE)
+      AND u.durum = 1;
+    UPDATE uyelikler
+    SET durum = 0
+    FROM uyelikler u
+    INNER JOIN inserted i ON u.uyelik_id = i.uyelik_id
+    LEFT JOIN (
+        SELECT uyelik_id, MAX(tarih_saat) AS son_giris
+        FROM giris_log
+        WHERE sonuc IN ('BASARILI', 'SEANS_DEVAM')
+        GROUP BY uyelik_id
+    ) gl ON u.uyelik_id = gl.uyelik_id
+    WHERE i.kalan_giris <= 0 
+      AND i.kalan_giris <> -1  -- Sınırsız üyelikleri hariç tut
+      AND u.durum = 1
+      AND (gl.son_giris IS NULL OR DATEDIFF(MINUTE, gl.son_giris, GETDATE()) >= 60);
+END

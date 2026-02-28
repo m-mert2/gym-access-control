@@ -1,0 +1,14 @@
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
+.DS_Store
+
+# Temp files
+*.tmp
+*.log
+*.bak
+primes.txt
